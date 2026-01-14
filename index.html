@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Museus Aumentados</title>
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+</head>
+
+<body style="margin:0; overflow:hidden;">
+
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+    <a-entity camera></a-entity>
+
+    <!-- IMAGEM QUE SEGUE O MARCADOR HIRO -->
+    <a-marker preset="hiro">
+      <a-image src="assets/img/DrSousaSraSousa.png" width="3" height="3" rotation="-90 0 0" position="0 0 0">
+      </a-image>
+    </a-marker>
+
+    <a-marker type="pattern" url="patts/pattern-a1-1.patt">
+      <a-image src="assets/img/Camera1.png" width="3" height="3" rotation="-90 0 0" position="0 0 0">
+      </a-image>
+    </a-marker>
+
+    <a-marker type="pattern" url="patts/pattern-1">
+      <a-image src="assets/img/layout_verso.png" width="3" height="3" rotation="-90 0 0" position="0 0 0">
+      </a-image>
+    </a-marker>
+
+  </a-scene>
+</body>
+
+</html>
