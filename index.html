@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
   <title>Museus Aumentados</title>
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
@@ -15,6 +16,36 @@
 
 
   <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      touch-action: manipulation;
+      /* reduz zoom acidental */
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* força a cena a preencher a tela */
+    a-scene,
+    canvas,
+    .a-canvas {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* força o vídeo da câmera a cobrir (evita zoom/crop estranho) */
+    video {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+
     /* ===== Modal (Jacinto) ===== */
     .modal {
       display: none;
