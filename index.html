@@ -27,23 +27,23 @@
       /* evita faixa branca se sobrar 1px */
     }
 
-    /* força o elemento <a-scene> a ocupar a tela toda */
-    a-scene {
+    /* força a cena a ocupar a tela toda */
+    a-scene,
+    .a-canvas,
+    canvas {
       position: fixed !important;
       inset: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
     }
 
-    /* força canvas/vídeo a cobrir a tela */
-    canvas,
-    .a-canvas,
+    /* NÃO mexa no video — deixe o AR.js controlar */
     video {
-      position: fixed !important;
-      inset: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
-      object-fit: cover !important;
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: auto !important;
+      height: auto !important;
     }
 
     .a-enter-vr,
