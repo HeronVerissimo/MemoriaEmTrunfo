@@ -1,193 +1,304 @@
+/* ==========================================
+   1) CONFIGURAÇÕES GERAIS E RESET
+   ========================================== */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #1a1a1a;
+  font-family: 'Averia Libre', system-ui, -apple-system, sans-serif;
+  color: #ffffff;
+  box-sizing: border-box;
+}
 
-    /* ===== Modal (Jacinto) ===== */
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, .62);
-      backdrop-filter: blur(8px);
-      z-index: 9999;
-    }
+/* Utilitário para ocultar elementos */
+.hidden {
+  display: none !important;
+}
 
-    .modal-box {
-      background:
-        url("assets/img/background-modal.png") center / cover no-repeat;
-      width: min(680px, 92vw);
-      max-height: 86vh;
-      margin: 7vh auto;
-      border-radius: 16px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 20px 45px rgba(0, 0, 0, .35);
-      font-family: 'Averia Libre', system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    }
+/* Estrutura de container para páginas estáticas (Releituras e Créditos) */
+.container-estatico {
+  max-width: 600px;
+  width: 90%;
+  background-color: #2c3e50;
+  border: 2px solid #f1c40f;
+  border-radius: 10px;
+  padding: 30px;
+  box-sizing: border-box;
+  margin: 80px auto 20px auto;
+}
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: flex-start;
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(0, 0, 0, .1);
-    }
+.container-estatico h1 {
+  color: #f1c40f;
+  text-align: center;
+  margin-top: 0;
+}
 
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+/* Botão flutuante/retorno para as páginas secundárias */
+.btn-voltar {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 999;
+  padding: 10px 15px;
+  font-family: 'Averia Libre', sans-serif;
+  font-weight: bold;
+  background-color: #34495e;
+  color: #ffffff;
+  border: 2px solid #f1c40f;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background 0.3s;
+}
 
-    .header-image {
-      width: 48px;
-      height: 48px;
-      object-fit: contain;
-      border-radius: 8px;
-    }
+.btn-voltar:hover {
+  background-color: #2c3e50;
+}
 
-    .header-text {
-      display: flex;
-      flex-direction: column;
-    }
+/* ==========================================
+   2) TELA DE INÍCIO (index.html)
+   ========================================== */
+.tela-inicio {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
 
+.menu-container {
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
 
-    .kicker {
-      font-size: 12px;
-      opacity: .75;
-      margin-bottom: 4px;
-      font-weight: 400;
-      letter-spacing: .04em;
-    }
+.menu-titulo {
+  font-size: 2.5rem;
+  margin-bottom: 40px;
+  color: #f1c40f;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
 
-    .title {
-      margin: 0;
-      font-size: 18px;
-      line-height: 1.15;
-      font-weight: 700;
+.btn-menu {
+  display: block;
+  width: 100%;
+  padding: 15px;
+  margin: 15px 0;
+  font-family: 'Averia Libre', sans-serif;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ffffff;
+  background-color: #34495e;
+  border: 2px solid #f1c40f;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none; /* Garante estilo correto se for tag <a> */
+  text-align: center;
+  box-sizing: border-box;
+  transition: background 0.3s;
+}
 
-    }
+.btn-menu:hover {
+  background-color: #2c3e50;
+}
 
-    .close-btn {
-      border: 0;
-      background: none;
-      font-size: 20px;
-      cursor: pointer;
-      padding: 6px 10px;
-      border-radius: 10px;
-    }
+.btn-menu-principal {
+  background-color: #e74c3c;
+}
 
-    .close-btn:active {
-      background: rgba(0, 0, 0, .06);
-    }
+.btn-menu-principal:hover {
+  background-color: #c0392b;
+}
 
-    .modal-body {
-      padding: 14px 16px;
-      overflow: auto;
-      font-size: 14px;
-      line-height: 1.45;
-    }
+/* ==========================================
+   3) MODAL INTERFERÊNCIA (RealidadeAumentada.html)
+   ========================================== */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .62);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+}
 
-    .hint {
-      background: rgba(0, 0, 0, .05);
-      border: 1px solid rgba(0, 0, 0, .06);
-      padding: 10px 12px;
-      border-radius: 12px;
-      margin-bottom: 12px;
-    }
+.modal-box {
+  background: url("assets/img/background-modal.png") center / cover no-repeat;
+  width: min(680px, 92vw);
+  max-height: 86vh;
+  margin: 7vh auto;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, .35);
+  font-family: 'Averia Libre', system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  color: #000000; /* Força cor escura para legibilidade sobre o fundo claro do modal */
+}
 
-    .actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, .1);
+}
 
-    .btn {
-      border: 0;
-      border-radius: 12px;
-      padding: 10px 14px;
-      cursor: pointer;
-      font-weight: 700;
-      font-family: 'Averia Libre', system-ui, sans-serif;
-      letter-spacing: .03em;
-    }
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
-    .btn-primary {
-      background: #111;
-      color: #fff;
-    }
+.header-image {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 8px;
+}
 
-    .btn:disabled {
-      opacity: .45;
-      cursor: not-allowed;
-    }
+.header-text {
+  display: flex;
+  flex-direction: column;
+}
 
-    .resultado {
-      border-top: 1px solid rgba(0, 0, 0, .08);
-      padding-top: 12px;
-    }
+.kicker {
+  font-size: 12px;
+  opacity: .75;
+  margin-bottom: 4px;
+  font-weight: 400;
+  letter-spacing: .04em;
+}
 
-    .hidden {
-      display: none;
-    }
+.title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.15;
+  font-weight: 700;
+}
 
-    .chip {
-      display: inline-block;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: .4px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      margin-bottom: 8px;
-      border: 1px solid rgba(0, 0, 0, .1);
-    }
+.close-btn {
+  border: 0;
+  background: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
 
-    .chip.sorte {
-      background: rgba(34, 197, 94, .12);
-    }
+.close-btn:active {
+  background: rgba(0, 0, 0, .06);
+}
 
-    .chip.reves {
-      background: rgba(239, 68, 68, .12);
-    }
+.modal-body {
+  padding: 14px 16px;
+  overflow: auto;
+  font-size: 14px;
+  line-height: 1.45;
+}
 
-    .chip.aleatorio {
-      background: rgba(59, 130, 246, .12);
-    }
+.hint {
+  background: rgba(0, 0, 0, .05);
+  border: 1px solid rgba(0, 0, 0, .06);
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
 
-    .res-titulo {
-      margin: 0 0 6px;
-      font-size: 16px;
-      font-weight: 700;
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
 
-    }
+.btn {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 700;
+  font-family: 'Averia Libre', system-ui, sans-serif;
+  letter-spacing: .03em;
+}
 
-    .res-texto {
-      margin: 0 0 10px;
-      opacity: .95;
-    }
+.btn-primary {
+  background: #111;
+  color: #fff;
+}
 
-    .rules {
-      background: rgba(0, 0, 0, .04);
-      border: 1px solid rgba(0, 0, 0, .06);
-      border-radius: 12px;
-      padding: 10px 12px;
-    }
+.btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
 
-    .rules-title {
-      font-size: 12px;
-      font-weight: 900;
-      opacity: .75;
-      margin-bottom: 6px;
-    }
+.resultado {
+  border-top: 1px solid rgba(0, 0, 0, .08);
+  padding-top: 12px;
+}
 
-    .rules-list {
-      margin: 0;
-      padding-left: 18px;
-    }
+.chip {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(0, 0, 0, .1);
+}
 
-    .modal-footer {
-      padding: 10px 16px;
-      border-top: 1px solid rgba(0, 0, 0, .1);
-      font-size: 12px;
-      opacity: .8;
-    }
+.chip.sorte {
+  background: rgba(34, 197, 94, .12);
+  color: #16a34a;
+}
+
+.chip.reves {
+  background: rgba(239, 68, 68, .12);
+  color: #dc2626;
+}
+
+.chip.aleatorio {
+  background: rgba(59, 130, 246, .12);
+  color: #2563eb;
+}
+
+.res-titulo {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.res-texto {
+  margin: 0 0 10px;
+  opacity: .95;
+}
+
+.rules {
+  background: rgba(0, 0, 0, .04);
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.rules-title {
+  font-size: 12px;
+  font-weight: 900;
+  opacity: .75;
+  margin-bottom: 6px;
+}
+
+.rules-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.modal-footer {
+  padding: 10px 16px;
+  border-top: 1px solid rgba(0, 0, 0, .1);
+  font-size: 12px;
+  opacity: .8;
+}
