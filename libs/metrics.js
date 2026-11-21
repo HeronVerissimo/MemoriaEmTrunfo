@@ -399,7 +399,7 @@
     if (!CFG.ui) return; buildUI(); if (!line) return;
     var s = state === 'recording' ? 'gravando ' + Math.max(0, Math.round(CFG.duration - (now() - recStart) / 1000)) + 's'
           : state === 'warmup' ? 'aquecendo' : state === 'done' ? 'pronto: ' + (API.lastName || '') : 'parado';
-    var t = 'ARM ' + CFG.scenario + '/' + CFG.run + ' | ' + s + ' | ' + Math.round(liveFps) + ' fps' + (CFG.marks ? ' | marks' : '');
+    var t = 'ARM ' + (qs.get('version') || (window.AFRAME ? 'A-Frame' : 'Three.js')) + ' ' + CFG.scenario + '/' + CFG.run + ' | ' + s + ' | ' + Math.round(liveFps) + ' fps' + (CFG.marks ? ' | marks' : '');
     if (line.textContent !== t) line.textContent = t;
   }
 
