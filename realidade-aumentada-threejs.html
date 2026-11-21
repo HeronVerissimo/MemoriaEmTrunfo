@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <title>Realidade Aumentada (Three.js) - Memória em Trunfo</title>
+
+  <!-- Bibliotecas de Realidade Aumentada -->
+  <script src="libs/three.min.js"></script>
+  <script src="libs/ar.js"></script>
+
+  <!-- Importação de Fontes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Averia+Libre:wght@300;400;700&display=swap" rel="stylesheet">
+  
+  <!-- Arquivo CSS Único -->
+  <link rel="stylesheet" href="style.css">
+  <script src="libs/metrics.js"></script>
+</head>
+
+<body style="margin:0; overflow:hidden;">
+
+  <!-- Botão flutuante para voltar ao menu inicial -->
+  <a href="index.html" class="btn-voltar">⬅ Sair</a>
+
+  <!-- MODAL (apenas Jacinto) -->
+  <div id="modalJacinto" class="modal" role="dialog" aria-modal="true" aria-labelledby="jacintoTitle">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="header-left">
+          <img src="assets/img/jacinto.png" alt="Espírito de Jacinto de Sousa" class="header-image" />
+          <div class="header-text">
+            <div class="kicker">Espírito de Jacinto de Sousa</div>
+            <h2 class="title" id="jacintoTitle">Interferência: Sorte ou Revés</h2>
+          </div>
+        </div>
+        <button id="fecharJacinto" class="close-btn" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="hint">
+          O espírito de Jacinto de Sousa apareceu, agora revele sua interferência!!!
+        </div>
+
+        <div class="actions">
+          <button id="btnRevelar" class="btn btn-primary">Revelar Interferência</button>
+        </div>
+
+        <div id="resultado" class="resultado hidden">
+          <div class="chip" id="chipTipo">TIPO</div>
+          <h3 id="resTitulo" class="res-titulo">Título</h3>
+          <p id="resTexto" class="res-texto">Descrição</p>
+
+          <div class="rules">
+            <div class="rules-title">Como aplicar no jogo</div>
+            <ul id="resRegras" class="rules-list"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        Feche o modal para retomar a câmera.
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    // ==========================================
+    // 1) GERENCIAMENTO AUTOMÁTICO DE MARCADORES
+    // ==========================================
+
+    const todosCodigos = [
+      "1A", "1B", "1C", "1D",
+      "2A", "2B", "2C", "2D",
+      "3A", "3B", "3C", "3D",
+      "4A", "4B", "4C", "4D",
+      "5A", "5B", "5C", "5D",
+      "6A", "6B", "6C", "6D",
+      "7A", "7B", "7C", "7D",
+      "8A", "8B", "8C", "8D", "trunfo"
+    ];
+
+    const codigosComImagem = [
+      "1C", "1D", "2A", "2B", "3B", "3C", "3D",
+      "4A", "5B", "6A", "6B", "7A", "7B", "7D",
+      "8A", "8B", "8C", "8D"
+    ];
+
+    const jpgs = ["3D", "6A", "7A", "7D", "8A", "8D"];
+
+    function srcImagemParaCodigo(codigo) {
+      if (!codigosComImagem.includes(codigo)) return "assets/img/emProducao.png";
+      const ext = jpgs.includes(codigo) ? "jpg" : "png";
+      return `assets/img/${codigo}.${ext}`;
+    }
+
+    // ==========================================================
+    // CENA AR EM THREE.JS (equivalente à <a-scene> da versão A-Frame)
+    // Mesmos parâmetros do AR.js: perfil "default" (celular => phone-normal),
+    // modo marcador, 33 padrões da frente + 1 do verso, imagens 3x3 giradas -90° em X.
+    // ==========================================================
+    const Q = new URLSearchParams(location.search);
+    // Flags opcionais para ISOLAR o custo de comportamentos que o wrapper do A-Frame tem
+    // (padrão: desligadas = uso idiomático do Three.js):
+    //   ?onresize=frame  -> chama session.onResize() a cada quadro (como o sistema arjs do A-Frame)
+    //   ?resizeloop=1    -> dispara o evento "resize" da janela a cada 1 s (como o A-Frame/AR.js faz)
+    const FLAG_RESIZE_FRAME = Q.get("onresize") === "frame";
+    const FLAG_RESIZE_LOOP = Q.get("resizeloop") === "1";
+    const M = window.ARMetrics || { begin() {}, end() {}, nest() {}, event() {}, hookThree() {} };
+
+    const ehMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const MAX_CANVAS = 1920; // limite de pixels do canvas do A-Frame (maxCanvasWidth/Height)
+
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: !ehMobile,
+      powerPreference: "high-performance"
+    });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.sortObjects = false;
+    renderer.domElement.style.position = "absolute";
+    renderer.domElement.style.top = "0px";
+    renderer.domElement.style.left = "0px";
+    document.body.appendChild(renderer.domElement);
+
+    const scene3 = new THREE.Scene();
+    const camera3 = new THREE.Camera(); // o AR.js sobrescreve a matriz de projeção
+    scene3.add(camera3);
+
+    // Ajusta o buffer do canvas ao tamanho CSS definido pelo AR.js, com o mesmo limite do A-Frame
+    let ultimoEstilo = "";
+    function ajustarCanvas() {
+      const st = renderer.domElement.style;
+      const chave = st.width + "|" + st.height;
+      if (chave === ultimoEstilo) return;
+      ultimoEstilo = chave;
+      const cssW = parseFloat(st.width), cssH = parseFloat(st.height);
+      if (!cssW || !cssH) return;
+      const dpr = window.devicePixelRatio;
+      const k = Math.min(1, MAX_CANVAS / (cssW * dpr), MAX_CANVAS / (cssH * dpr));
+      renderer.setSize(Math.round(cssW * k), Math.round(cssH * k), false);
+    }
+
+    // Texturas: carregadas antes de iniciar a câmera (o A-Frame também espera os assets)
+    const carregador = new THREE.TextureLoader();
+    const cacheTex = new Map();
+    function textura(src) {
+      if (!cacheTex.has(src)) {
+        cacheTex.set(src, new Promise((ok, erro) => carregador.load(src, ok, undefined, erro)));
+      }
+      return cacheTex.get(src);
+    }
+
+    const itens = todosCodigos.map(c => ({
+      id: c, patt: `patts/pattern-${c}.patt`, img: srcImagemParaCodigo(c)
+    }));
+    itens.push({ id: "jacinto", patt: "patts/pattern-jacinto.patt", img: "assets/img/layout_verso.png" });
+
+    let session = null;
+    const ancoras = [];
+    let emLoop = false;
+
+    function quadro() {
+      M.begin("tick");
+      for (let i = 0; i < ancoras.length; i++) ancoras[i].update();
+      if (FLAG_RESIZE_FRAME) session.onResize();
+      session.update();
+      M.end("tick");
+      ajustarCanvas();
+      renderer.render(scene3, camera3);
+    }
+    function pausarCena() { renderer.setAnimationLoop(null); emLoop = false; }
+    function retomarCena() { if (!session || emLoop) return; renderer.setAnimationLoop(quadro); emLoop = true; }
+
+    Promise.all(itens.map(it => textura(it.img))).then(texturas => {
+      const perfil = new ARjs.Profile()
+        .trackingMethod("best")
+        .performance("default")     // celular => "phone-normal" (320x240, 30 Hz), igual ao A-Frame
+        .defaultMarker();
+
+      session = new ARjs.Session({
+        renderer: renderer,
+        camera: camera3,
+        scene: scene3,
+        sourceParameters: perfil.sourceParameters,
+        contextParameters: perfil.contextParameters
+      });
+
+      itens.forEach((it, k) => {
+        const anchor = new ARjs.Anchor(session, {
+          type: "pattern",
+          patternUrl: it.patt,
+          changeMatrixMode: "modelViewMatrix",
+          markersAreaEnabled: false
+        });
+        const plano = new THREE.Mesh(
+          new THREE.PlaneGeometry(3, 3),
+          new THREE.MeshBasicMaterial({ map: texturas[k], transparent: true, side: THREE.FrontSide })
+        );
+        plano.rotation.x = -Math.PI / 2;
+        anchor.object3d.add(plano);
+        ancoras.push(anchor);
+      });
+
+      window.addEventListener("resize", ajustarCanvas);
+      session.arContext.addEventListener("initialized", () => { ultimoEstilo = ""; ajustarCanvas(); });
+      window.addEventListener("arjs-video-loaded", () => {
+        window.dispatchEvent(new CustomEvent("camera-init")); // mesmo nome que a metrics.js usa no A-Frame
+      });
+      if (FLAG_RESIZE_LOOP) setInterval(() => window.dispatchEvent(new Event("resize")), 1000);
+
+      M.nest("tracking", "tick");
+      M.nest("resize", "tick");
+      M.hookThree({ renderer: renderer, arContext: session.arContext, arSource: session.arSource, trackResize: true });
+
+      retomarCena();
+      window.dispatchEvent(new CustomEvent("renderstart"));
+    }).catch(e => console.error("Falha ao iniciar a cena Three.js", e));
+
+
+
+    // ==========================================
+    // 2) LÓGICA DO MODAL E GERADOR ALEATÓRIO (RNG)
+    // ==========================================
+
+    const modal = document.getElementById("modalJacinto");
+    const btnClose = document.getElementById("fecharJacinto");
+    const btnRevelar = document.getElementById("btnRevelar");
+
+    const resultadoBox = document.getElementById("resultado");
+    const chipTipo = document.getElementById("chipTipo");
+    const resTitulo = document.getElementById("resTitulo");
+    const resTexto = document.getElementById("resTexto");
+    const resRegras = document.getElementById("resRegras");
+
+    let modalAberto = false;
+    let resultadoTravado = false;
+
+    function randInt(maxExclusive) {
+      const arr = new Uint32Array(1);
+      crypto.getRandomValues(arr);
+      return arr[0] % maxExclusive;
+    }
+
+    const efeitos = {
+      sorte: [
+        {
+          titulo: "Vitória em Dobro",
+          texto: "A vitória é abençoada. O vencedor ganha uma carta extra da mão de cada um dos outros jogadores.",
+          regras: [
+            "Cada jogador entrega 1 carta da própria mão ao vencedor.",
+            "Se algum jogador não tiver cartas na mão, ele não entrega nada."
+          ]
+        },
+        {
+          titulo: "Previsão do Futuro",
+          texto: "O vencedor tem um vislumbre do destino e pode espiar o topo do monte de metade dos jogadores (arredondando para baixo).",
+          regras: [
+            "Calcule metade do número de jogadores e arredonde para baixo.",
+            "Escolha esse número de jogadores e veja a carta do topo do monte de cada um.",
+            "Depois devolva cada carta exatamente ao topo do respectivo monte."
+          ]
+        }
+      ],
+      reves: [
+        {
+          titulo: "Vitória Anulada",
+          texto: "O espírito rejeita a última vitória. Ela é cancelada e as cartas retornam aos seus montes.",
+          regras: [
+            "Desfaça o resultado da última rodada.",
+            "As cartas que mudaram de dono voltam aos seus montes originais (como estavam antes da rodada)."
+          ]
+        },
+        {
+          titulo: "Atributo Maculado",
+          texto: "Na próxima rodada, o vencedor não pode escolher o mesmo atributo usado para vencer a rodada anterior.",
+          regras: [
+            "Marque qual atributo foi usado na última vitória.",
+            "Na próxima rodada, se o mesmo jogador vencer novamente, ele não pode escolher aquele atributo.",
+            "Se outro jogador vencer, a regra não se aplica."
+          ]
+        }
+      ],
+      aleatorio: [
+        {
+          titulo: "Troca de Domínio",
+          texto: "O destino gira a mesa: todos passam a carta do topo de seus montes ao jogador à esquerda.",
+          regras: [
+            "Cada jogador pega a carta do topo do próprio monte.",
+            "Cada jogador pega a carta em sua mão e a entrega para o jogador à esquerda.",
+            "As cartas recebidas viram o novo topo do monte de cada jogador."
+          ]
+        }
+      ]
+    };
+
+    function renderResultado(tipo, item) {
+      if (tipo === "sorte") {
+        chipTipo.textContent = "SORTE";
+        chipTipo.className = "chip sorte";
+      } else if (tipo === "reves") {
+        chipTipo.textContent = "REVÉS";
+        chipTipo.className = "chip reves";
+      } else {
+        chipTipo.textContent = "ALEATORIEDADE";
+        chipTipo.className = "chip aleatorio";
+      }
+
+      resTitulo.textContent = item.titulo;
+      resTexto.textContent = item.texto;
+
+      resRegras.innerHTML = "";
+      item.regras.forEach(r => {
+        const li = document.createElement("li");
+        li.textContent = r;
+        resRegras.appendChild(li);
+      });
+
+      resultadoBox.classList.remove("hidden");
+    }
+
+    function sortearInterferenciaUmaVez() {
+      const tipoIndex = randInt(3);
+      const tipo = (tipoIndex === 0) ? "sorte" : (tipoIndex === 1) ? "reves" : "aleatorio";
+
+      const lista = efeitos[tipo];
+      const item = lista[randInt(lista.length)];
+
+      renderResultado(tipo, item);
+
+      resultadoTravado = true;
+      btnRevelar.disabled = true;
+    }
+
+    function abrirModal() {
+      modal.style.display = "block";
+      modalAberto = true;
+      if (window.ARMetrics) ARMetrics.event("modal_open");
+      pausarCena();
+
+      resultadoBox.classList.add("hidden");
+      chipTipo.textContent = "TIPO";
+      chipTipo.className = "chip";
+      resTitulo.textContent = "";
+      resTexto.textContent = "";
+      resRegras.innerHTML = "";
+
+      resultadoTravado = false;
+      btnRevelar.disabled = false;
+    }
+
+    function fecharModal() {
+      modal.style.display = "none";
+      modalAberto = false;
+      retomarCena();
+    }
+
+    // AR.js (build Three.js) dispara "markerFound" na janela; detail = controles do marcador
+    window.addEventListener("markerFound", (ev) => {
+      const p = ev.detail && ev.detail.parameters;
+      if (!p || !String(p.patternUrl).endsWith("pattern-jacinto.patt")) return;
+      if (modalAberto) return;
+      abrirModal();
+    });
+
+    btnRevelar.addEventListener("click", () => {
+      if (resultadoTravado) return;
+      sortearInterferenciaUmaVez();
+    });
+
+    btnClose.addEventListener("click", fecharModal);
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) fecharModal();
+    });
+  </script>
+</body>
+
+</html>
