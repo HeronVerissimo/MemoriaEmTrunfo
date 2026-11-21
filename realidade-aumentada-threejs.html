@@ -18,6 +18,26 @@
   
   <!-- Arquivo CSS Único -->
   <link rel="stylesheet" href="style.css">
+  <script>
+    // Diagnóstico na tela: abra a página com ?debug=1 (só para investigar problemas no celular)
+    (function () {
+      if (!/[?&]debug=1/.test(location.search)) return;
+      var box, linhas = [], t0 = performance.now();
+      function mostrar() { if (!box) return; box.textContent = linhas.slice(-18).join("\n"); }
+      window.dbg = function (m) { linhas.push(((performance.now() - t0) / 1000).toFixed(1) + "s " + m); mostrar(); };
+      document.addEventListener("DOMContentLoaded", function () {
+        box = document.createElement("pre");
+        box.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;margin:0;padding:6px;background:rgba(0,0,0,.8);color:#7CFC00;font:11px/1.3 monospace;white-space:pre-wrap;pointer-events:none;max-height:45vh;overflow:hidden";
+        document.body.appendChild(box); mostrar();
+      });
+      window.addEventListener("error", function (e) { dbg("ERRO: " + e.message + " (" + (e.filename || "").split("/").pop() + ":" + e.lineno + ")"); });
+      window.addEventListener("unhandledrejection", function (e) { dbg("PROMESSA: " + (e.reason && (e.reason.message || e.reason))); });
+      ["error", "warn"].forEach(function (k) { var o = console[k]; console[k] = function () { try { var m = Array.prototype.slice.call(arguments).join(" "); if (!/markersAreaEnabled|\[info\]|Camera Parameter resized/.test(m)) dbg(k + ": " + m.slice(0, 160)); } catch (_) {} o.apply(console, arguments); }; });
+      dbg("UA: " + navigator.userAgent.slice(0, 80));
+      dbg("dpr " + devicePixelRatio + " tela " + innerWidth + "x" + innerHeight + " https=" + (location.protocol === "https:"));
+      dbg("getUserMedia: " + !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
+    })();
+  </script>
   <script src="libs/metrics.js"></script>
 </head>
 
@@ -145,13 +165,20 @@
       renderer.setSize(Math.round(cssW * k), Math.round(cssH * k), false);
     }
 
-    // Texturas: carregadas antes de iniciar a câmera (o A-Frame também espera os assets)
+    // Texturas: carregadas em paralelo SEM bloquear a câmera (no A-Frame a cena também sobe
+    // mesmo que uma imagem falhe). Cada imagem é atribuída ao material quando chega; 1 nova tentativa se falhar.
     const carregador = new THREE.TextureLoader();
     const cacheTex = new Map();
+    let texOk = 0, texFalhas = 0;
+    const dbg = (m) => { if (window.dbg) window.dbg(m); };
+    function carregar(src, tentativa) {
+      return new Promise((ok, erro) => carregador.load(src, ok, undefined, () => {
+        if (tentativa < 1) { dbg("nova tentativa: " + src); setTimeout(() => carregar(src, tentativa + 1).then(ok, erro), 800); }
+        else erro(new Error("imagem " + src));
+      }));
+    }
     function textura(src) {
-      if (!cacheTex.has(src)) {
-        cacheTex.set(src, new Promise((ok, erro) => carregador.load(src, ok, undefined, erro)));
-      }
+      if (!cacheTex.has(src)) cacheTex.set(src, carregar(src, 0));
       return cacheTex.get(src);
     }
 
@@ -176,7 +203,7 @@
     function pausarCena() { renderer.setAnimationLoop(null); emLoop = false; }
     function retomarCena() { if (!session || emLoop) return; renderer.setAnimationLoop(quadro); emLoop = true; }
 
-    Promise.all(itens.map(it => textura(it.img))).then(texturas => {
+    try {
       const perfil = new ARjs.Profile()
         .trackingMethod("best")
         .performance("default")     // celular => "phone-normal" (320x240, 30 Hz), igual ao A-Frame
@@ -189,27 +216,34 @@
         sourceParameters: perfil.sourceParameters,
         contextParameters: perfil.contextParameters
       });
+      dbg("sessão criada (vai pedir a câmera)");
 
-      itens.forEach((it, k) => {
+      itens.forEach((it) => {
         const anchor = new ARjs.Anchor(session, {
           type: "pattern",
           patternUrl: it.patt,
           changeMatrixMode: "modelViewMatrix",
           markersAreaEnabled: false
         });
-        const plano = new THREE.Mesh(
-          new THREE.PlaneGeometry(3, 3),
-          new THREE.MeshBasicMaterial({ map: texturas[k], transparent: true, side: THREE.FrontSide })
-        );
+        const material = new THREE.MeshBasicMaterial({ transparent: true, side: THREE.FrontSide });
+        const plano = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), material);
         plano.rotation.x = -Math.PI / 2;
         anchor.object3d.add(plano);
         ancoras.push(anchor);
+        textura(it.img).then(t => {
+          material.map = t; material.needsUpdate = true; texOk++;
+        }).catch(() => {
+          texFalhas++; material.visible = false; dbg("FALHOU imagem: " + it.img);
+        }).then(() => {
+          if (texOk + texFalhas === itens.length) { dbg("imagens: " + texOk + " ok, " + texFalhas + " falhas"); M.event("textures_loaded"); }
+        });
       });
+      dbg("34 âncoras criadas; carregando imagens em segundo plano");
 
       window.addEventListener("resize", ajustarCanvas);
       session.arContext.addEventListener("initialized", () => { ultimoEstilo = ""; ajustarCanvas(); });
       window.addEventListener("arjs-video-loaded", () => {
-        window.dispatchEvent(new CustomEvent("camera-init")); // mesmo nome que a metrics.js usa no A-Frame
+        dbg("câmera aberta");
       });
       if (FLAG_RESIZE_LOOP) setInterval(() => window.dispatchEvent(new Event("resize")), 1000);
 
@@ -218,8 +252,12 @@
       M.hookThree({ renderer: renderer, arContext: session.arContext, arSource: session.arSource, trackResize: true });
 
       retomarCena();
+      dbg("laço de render iniciado");
       window.dispatchEvent(new CustomEvent("renderstart"));
-    }).catch(e => console.error("Falha ao iniciar a cena Three.js", e));
+    } catch (e) {
+      console.error("Falha ao iniciar a cena Three.js", e);
+      dbg("FALHA AO INICIAR: " + (e && e.message));
+    }
 
 
 
